@@ -1,0 +1,10 @@
+# modules
+node_modules
+
+# dist
+dist
+build
+
+# # Environment
+.env*
+!.env.example
