@@ -14,12 +14,16 @@ export const setRoutes = (app: IApp) => {
 
     // Calculate BST from notation
     router.post('/calculate', burstStrengthController.calculateBST.bind(burstStrengthController));
+    // Calculate Box Properties (BCT)
+    router.post('/calculate-box', burstStrengthController.calculateBox.bind(burstStrengthController));
     // Batch calculate multiple notations
     router.post('/batch-calculate', burstStrengthController.batchCalculateBST.bind(burstStrengthController));
 
     const paperController = new PapersController(new PaperDB());
     // Get all paper types
     router.get('/papers', paperController.getAllPaperTypes.bind(paperController));
+    // Calculate RCT for specific paper
+    router.post('/calculate-rct', paperController.calculatePaperRCT.bind(paperController));
 
     app.use('/api', router);
 }

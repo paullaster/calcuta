@@ -4,13 +4,17 @@ import { Board } from "../../infra/database/models/board.ts";
 export class BoardNotationParser {
     constructor( private paperDatabase: IDataBase) { }
     parse(notation: string) {
-        // Example: "125K|127B|125K" or "12k|12k"
-        const parts = notation.split('|');
+        // Support both pipe (|) and forward slash (/) as separators
+        const parts = notation.split(/[|\/]/);
         const layers = [];
 
         for (const part of parts) {
             const layer = this.parseLayer(part.trim());
             if (layer) layers.push(layer);
+        }
+
+        if (layers.length === 0) {
+            throw new Error(`Invalid board notation: "${notation}". Correct format: "125K/127B/125K" or "125K|127B|125K"`);
         }
 
         return new Board(layers);

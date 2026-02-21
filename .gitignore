@@ -8,3 +8,6 @@ build
 # # Environment
 .env*
 !.env.example
+
+# Write-ups
+ANALYSIS.md
