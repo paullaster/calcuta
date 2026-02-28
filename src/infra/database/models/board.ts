@@ -9,12 +9,14 @@ export class Board {
     totalBST: number;
     totalECT: number; // kN/m
     caliper: number; // mm
+    totalGrammage: number; // g/m2
 
     constructor(layers: any[]) {
         this.layers = layers; // Array of Layer objects
         this.totalBST = this.calculateBST();
         this.totalECT = this.calculateECT();
         this.caliper = this.calculateCaliper();
+        this.totalGrammage = this.calculateTotalGrammage();
     }
 
     calculateBST() {
@@ -24,6 +26,18 @@ export class Board {
                 return sum + (layer.paper.grammage * layer.paper.burstIndex);
             }
             return sum;
+        }, 0);
+    }
+
+    calculateTotalGrammage() {
+        return this.layers.reduce((sum, layer) => {
+            if (layer.isLiner) {
+                return sum + layer.paper.grammage;
+            } else {
+                const fluteParams = FLUTE_PARAMS[layer.typeCode];
+                const tur = fluteParams ? fluteParams.tur : 1.0;
+                return sum + (layer.paper.grammage * tur);
+            }
         }, 0);
     }
 

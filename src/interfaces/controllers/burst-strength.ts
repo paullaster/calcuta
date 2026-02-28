@@ -63,7 +63,7 @@ export class BurstStrength {
     // Calculate Box Properties (BCT)
     calculateBox(req: Request, res: Response) {
         try {
-            const { notation, length, width, height, unit = 'kPa' } = req.body;
+            const { notation, length, width, height, thickness, unit = 'kPa' } = req.body;
 
             if (!notation || !length || !width || !height) {
                 return res.status(400).json({ error: 'Notation, length, width, and height are required' });
@@ -76,12 +76,23 @@ export class BurstStrength {
             // BCT Calculation
             // Perimeter in meters
             const perimeter = 2 * (Number(length) + Number(width)) / 1000;
-            // Caliper in meters
-            const caliper = board.caliper / 1000;
+            // Caliper in meters: Use provided thickness if available, otherwise fallback to calculated
+            const usedCaliper = thickness ? Number(thickness) : board.caliper;
+            const caliperMeters = usedCaliper / 1000;
             
             // McKee Formula: 5.876 * ECT * sqrt(P * h)
             const k = 5.876;
-            const bct = k * ect * Math.sqrt(perimeter * caliper);
+            const bct = k * ect * Math.sqrt(perimeter * caliperMeters);
+
+            // Box Weight Calculation (Estimation for RSC)
+            // Formula from hand-calc: Weight = G * W_B * H_B
+            // W_B (Blank width/length in m) = (2 * (L + W) + 35) / 1000
+            // H_B (Blank height in m) = (W + H) / 1000
+            // G = board total grammage in g/m2
+            const w_b = (2 * (Number(length) + Number(width)) + 35) / 1000;
+            const h_b = (Number(width) + Number(height)) / 1000;
+            const weight_kg = (board.totalGrammage * w_b * h_b);
+            const weight_g = weight_kg * 1000;
 
             res.status(200).json({
                 notation,
@@ -91,7 +102,11 @@ export class BurstStrength {
                 ect, // kN/m
                 bct: bct, // kN
                 bct_kgf: bct * 102, // kgf
-                caliper: board.caliper, // mm
+                caliper: usedCaliper, // mm
+                caliperFallback: board.caliper, // mm
+                totalGrammage: board.totalGrammage, // g/m2
+                weight_g: weight_g,
+                weight_kg: weight_kg,
                 layers: board.layers.map(l => {
                     const TUR_MAP: Record<string, number> = { 'B': 1.35, 'C': 1.45, 'E': 1.20 };
                     const tur = TUR_MAP[l.typeCode] || 1.0;
