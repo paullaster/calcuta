@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start:dev": "NODE_ENV=development node --experimental-transform-types --watch --env-file=.env.development src/main.ts",
+    "start:prod": "NODE_ENV=production node --experimental-transform-types --env-file=.env.production src/main.ts",
     "format": "pnpm exec prettier . --write",
     "format:check": "pnpm exec prettier . --check",
     "test": "echo \"Error: no test specified\" && exit 1"
