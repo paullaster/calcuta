@@ -64,7 +64,6 @@ export class BurstStrength {
     calculateBox(req: Request, res: Response) {
         try {
             const { notation, length, width, height, thickness, unit = 'kPa' } = req.body;
-
             if (!notation || !length || !width || !height) {
                 return res.status(400).json({ error: 'Notation, length, width, and height are required' });
             }
@@ -75,7 +74,7 @@ export class BurstStrength {
             
             // BCT Calculation
             // Perimeter in meters
-            const perimeter = 2 * (Number(length) + Number(width)) / 1000;
+            const perimeter = (2 * (Number(length) + Number(width))) / 1000;
             // Caliper in meters: Use provided thickness if available, otherwise fallback to calculated
             const usedCaliper = thickness ? Number(thickness) : board.caliper;
             const caliperMeters = usedCaliper / 1000;
@@ -91,8 +90,8 @@ export class BurstStrength {
             // G = board total grammage in g/m2
             const w_b = (2 * (Number(length) + Number(width)) + 35) / 1000;
             const h_b = (Number(width) + Number(height)) / 1000;
-            const weight_kg = (board.totalGrammage * w_b * h_b);
-            const weight_g = weight_kg * 1000;
+            const weight_g = (board.totalGrammage * w_b * h_b);
+            const weight_kg = weight_g / 1000;
 
             res.status(200).json({
                 notation,
