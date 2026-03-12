@@ -3,13 +3,13 @@ import { Board } from "../../infra/database/models/board.ts";
 
 export class BoardNotationParser {
     constructor( private paperDatabase: IDataBase) { }
-    parse(notation: string) {
+    async parse(notation: string) {
         // Support both pipe (|) and forward slash (/) as separators
         const parts = notation.split(/[|\/]/);
         const layers = [];
 
         for (const part of parts) {
-            const layer = this.parseLayer(part.trim());
+            const layer = await this.parseLayer(part.trim());
             if (layer) layers.push(layer);
         }
 
@@ -19,7 +19,7 @@ export class BoardNotationParser {
 
         return new Board(layers);
     }
-    parseLayer(notation: string) {
+    async parseLayer(notation: string) {
         // Extract grammage and type
         const match = notation.match(/^(\d+)([a-zA-Z]+)$/);
         if (!match) return null;
@@ -27,18 +27,14 @@ export class BoardNotationParser {
         const grammage = parseInt(match[1]);
         const typeCode = match[2].toUpperCase();
 
-        // Determine if this is a fluting or liner
-        const flutingTypes = ['B', 'C', 'E', 'EB', 'A', 'F'];
-        const isFluting = flutingTypes.includes(typeCode);
-
         // Find paper in database
-        const paper = this.paperDatabase.findPaper(typeCode, grammage);
+        const paper = await this.paperDatabase.findPaper(typeCode, grammage);
 
         return {
             grammage,
             typeCode,
             paper,
-            isLiner: !isFluting
+            isLiner: paper ? paper.isLiner : !['B', 'C', 'E', 'EB', 'A', 'F'].includes(typeCode)
         };
     }
 }

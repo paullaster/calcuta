@@ -14,8 +14,36 @@ export class BurstStrength {
         return conversions[unit] || value;
     }
 
-    // Calculate Board Properties (BST, ECT)
-    calculateBST(req: Request, res: Response) {
+/**
+ * @openapi
+ * /api/calculate:
+ *   post:
+ *     summary: Calculate Board Properties (BST, ECT)
+ *     tags: [Engineering]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [notation]
+ *             properties:
+ *               notation:
+ *                 type: string
+ *                 example: "125K/127B/125K"
+ *               unit:
+ *                 type: string
+ *                 enum: [kPa, psi, kgf/cm2]
+ *                 default: kPa
+ *     responses:
+ *       200:
+ *         description: Calculation results
+ *       400:
+ *         description: Missing notation
+ *       500:
+ *         description: Error processing notation
+ */
+    async calculateBST(req: Request, res: Response) {
         try {
             const { notation, unit = 'kPa' } = req.body;
 
@@ -23,7 +51,7 @@ export class BurstStrength {
                 return res.status(400).json({ error: 'Notation is required' });
             }
 
-            const board = this.boardNotationService.parse(notation);
+            const board = await this.boardNotationService.parse(notation);
             const bst = board.getBST(unit);
             const ect = board.getECT('kN/m');
 
@@ -60,15 +88,51 @@ export class BurstStrength {
         }
     }
 
-    // Calculate Box Properties (BCT)
-    calculateBox(req: Request, res: Response) {
+/**
+ * @openapi
+ * /api/calculate-box:
+ *   post:
+ *     summary: Calculate Box Compression Test (BCT)
+ *     tags: [Engineering]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [notation, length, width, height]
+ *             properties:
+ *               notation:
+ *                 type: string
+ *                 example: "125K/127B/125K"
+ *               length:
+ *                 type: number
+ *                 example: 300
+ *               width:
+ *                 type: number
+ *                 example: 200
+ *               height:
+ *                 type: number
+ *                 example: 200
+ *               thickness:
+ *                 type: number
+ *                 description: "Optional manual thickness override (mm)"
+ *               unit:
+ *                 type: string
+ *                 enum: [kPa, psi, kgf/cm2]
+ *                 default: kPa
+ *     responses:
+ *       200:
+ *         description: BCT and box metrics
+ */
+    async calculateBox(req: Request, res: Response) {
         try {
             const { notation, length, width, height, thickness, unit = 'kPa' } = req.body;
             if (!notation || !length || !width || !height) {
                 return res.status(400).json({ error: 'Notation, length, width, and height are required' });
             }
 
-            const board = this.boardNotationService.parse(notation);
+            const board = await this.boardNotationService.parse(notation);
             const burstStrength = board.getBST(unit);
             const ect = board.getECT('kN/m');
             
@@ -130,13 +194,38 @@ export class BurstStrength {
         }
     }
 
-    // Batch calculate multiple notations
-    batchCalculateBST(req: Request, res: Response) {
+/**
+ * @openapi
+ * /api/batch-calculate:
+ *   post:
+ *     summary: Batch calculate multiple notations
+ *     tags: [Engineering]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [notations]
+ *             properties:
+ *               notations:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 example: ["125K/127B/125K", "150K/127C/150K"]
+ *               unit:
+ *                 type: string
+ *                 default: kPa
+ *     responses:
+ *       200:
+ *         description: Array of calculation results
+ */
+    async batchCalculateBST(req: Request, res: Response) {
         const { notations, unit = 'kPa' } = req.body;
 
-        const results = notations.map(notation => {
+        const results = await Promise.all(notations.map(async (notation) => {
             try {
-                const board = this.boardNotationService.parse(notation);
+                const board = await this.boardNotationService.parse(notation);
                 return {
                     notation,
                     burstStrength: board.getBST(unit),
@@ -151,7 +240,7 @@ export class BurstStrength {
                     success: false
                 };
             }
-        });
+        }));
 
         res.json({ results });
     }

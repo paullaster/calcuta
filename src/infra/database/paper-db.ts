@@ -1,37 +1,41 @@
 import type { IDataBase } from "../../entities/IDb-interface.ts";
 import { Paper } from "./models/paper.ts";
+import { db } from "./index.ts";
+import { papers } from "./schema.ts";
+import { eq } from "drizzle-orm";
 
 export class PaperDB implements IDataBase {
-    papers: Array<{ type: string; name: string; burstIndex: number; defaultGrammage: number; rctFactor: number }>
-    constructor() {
-        this.papers = [
-            { type: 'K', name: 'Brown Kraft', burstIndex: 4.0, defaultGrammage: 125, rctFactor: 1.15 },
-            { type: 'WK', name: 'White Kraft', burstIndex: 4.5, defaultGrammage: 125, rctFactor: 1.15 },
-            { type: 'TK', name: 'Top Kraft', burstIndex: 2.75, defaultGrammage: 125, rctFactor: 1.13 }, // Assuming TK is KT
-            { type: 'TL', name: 'Test Liner (Brown)', burstIndex: 2.25, defaultGrammage: 125, rctFactor: 1.0 },
-            { type: 'WTL', name: 'Test Liner (White)', burstIndex: 2.5, defaultGrammage: 125, rctFactor: 1.0 },
-            { type: 'BL', name: 'Box Liner', burstIndex: 2.25, defaultGrammage: 125, rctFactor: 1.0 }, // Added BL
+    constructor() { }
 
-            // Fluting types (negligible BST contribution, but important for ECT/RCT)
-            // Note: When used as fluting medium, the rctFactor is 0.95
-            { type: 'B', name: 'B-Flute Medium', burstIndex: 0, defaultGrammage: 127, rctFactor: 0.95 },
-            { type: 'C', name: 'C-Flute Medium', burstIndex: 0, defaultGrammage: 140, rctFactor: 0.95 },
-            { type: 'E', name: 'E-Flute Medium', burstIndex: 0, defaultGrammage: 115, rctFactor: 0.95 }
-        ]
+    async getAllPapers() {
+        return await db.select().from(papers);
     }
 
-    findPaper(typeCode: string, grammage: number) {
-        let paper = this.papers.find((p) => p.type === typeCode);
+    async findPaper(typeCode: string, grammage: number) {
+        let query = db.select().from(papers).where(eq(papers.code, typeCode));
         
-        if (!paper) {
+        const allMatchingTypes = await query;
+        
+        // Find exact grammage match if possible
+        let paperData = allMatchingTypes.find(p => p.defaultGrammage === grammage);
+        
+        // Fallback to first available if no exact match (or closest? for now first is safer than failing)
+        if (!paperData && allMatchingTypes.length > 0) {
+            paperData = allMatchingTypes[0];
+        }
+        
+        if (!paperData) {
             throw new Error(`Unknown paper type: ${typeCode}`);
         }
+
         return new Paper(
-            paper.name,
-            typeCode,
-            grammage || paper.defaultGrammage,
-            paper.burstIndex,
-            paper.rctFactor
+            paperData.name,
+            paperData.code,
+            grammage || paperData.defaultGrammage,
+            Number(paperData.burstIndex),
+            Number(paperData.rctFactor),
+            Number(paperData.co2PerKg),
+            paperData.isLiner
         );
     }
 }

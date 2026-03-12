@@ -70,6 +70,20 @@ export class Board {
         }, 0);
     }
 
+    calculateTotalCO2(blankAreaM2: number) {
+        return this.layers.reduce((sum, layer) => {
+            // Liners have standard area (no take-up)
+            if (layer.isLiner) {
+                return sum + layer.paper.calculateCO2(blankAreaM2);
+            } else {
+                // Fluting layers have take-up ratio (TUR)
+                const fluteParams = FLUTE_PARAMS[layer.typeCode];
+                const tur = fluteParams ? fluteParams.tur : 1.0;
+                return sum + layer.paper.calculateCO2(blankAreaM2 * tur);
+            }
+        }, 0);
+    }
+
     getBST(unit = 'kPa') {
         return this.convertUnits(this.totalBST, unit);
     }
