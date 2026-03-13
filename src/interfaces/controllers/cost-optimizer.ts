@@ -86,75 +86,97 @@ export class CostOptimizer {
             const h_b = (Number(width) + Number(height)) / 1000;
             const area_m2 = w_b * h_b;
 
+            // Helper to calculate board metrics
+            const calculateMetrics = (outer, inner, medium, fluteGeom) => {
+                const outerPaper = new Paper(outer.name, outer.code, outer.defaultGrammage, Number(outer.burstIndex), Number(outer.rctFactor), Number(outer.co2PerKg));
+                const innerPaper = new Paper(inner.name, inner.code, inner.defaultGrammage, Number(inner.burstIndex), Number(inner.rctFactor), Number(inner.co2PerKg));
+                const mediumPaper = new Paper(medium.name, medium.code, medium.defaultGrammage, Number(medium.burstIndex), Number(medium.rctFactor), Number(medium.co2PerKg));
+
+                const layers = [
+                    { isLiner: true, paper: outerPaper, typeCode: outer.code },
+                    { isLiner: false, paper: mediumPaper, typeCode: fluteGeom.code },
+                    { isLiner: true, paper: innerPaper, typeCode: inner.code }
+                ];
+
+                const board = new Board(layers);
+                const ect = board.getECT('kN/m');
+                
+                // BCT Calculation (McKee)
+                const perimeter = (2 * (Number(length) + Number(width))) / 1000;
+                const usedCaliper = thickness ? Number(thickness) : board.caliper;
+                const caliperMeters = usedCaliper / 1000;
+                const bct = 5.876 * ect * Math.sqrt(perimeter * caliperMeters);
+
+                // Convert BCT to kgf for comparison
+                const bctKgf = bct * 102;
+
+                // Sustainability (Phase 4)
+                const totalCO2 = board.calculateTotalCO2(area_m2);
+                const recycledContentPercentage = (
+                    (outer.isRecycled ? outer.defaultGrammage : 0) + 
+                    (inner.isRecycled ? inner.defaultGrammage : 0) + 
+                    (medium.isRecycled ? medium.defaultGrammage * fluteGeom.tur : 0)
+                ) / board.totalGrammage * 100;
+
+                // Financials (Phase 3)
+                const outerCost = (Number(outer.costPerTonne) || 900) * (outerPaper.grammage / 1000 * area_m2);
+                const innerCost = (Number(inner.costPerTonne) || 850) * (innerPaper.grammage / 1000 * area_m2);
+                const mediumCost = (Number(medium.costPerTonne) || 750) * (mediumPaper.grammage / 1000 * fluteGeom.tur * area_m2);
+                const totalCostPerBox = outerCost + innerCost + mediumCost;
+
+                return {
+                    notation: `${outerPaper.grammage}${outerPaper.type}/${mediumPaper.grammage}${fluteGeom.code}/${innerPaper.grammage}${innerPaper.type}`,
+                    technical: {
+                        bct: Number(bctKgf.toFixed(2)),
+                        ect: Number(ect.toFixed(2)),
+                        caliper: usedCaliper,
+                        weightKg: Number((board.totalGrammage / 1000 * area_m2).toFixed(3))
+                    },
+                    financial: {
+                        costPerBox: Number(totalCostPerBox.toFixed(4)),
+                        costPer1000: Number((totalCostPerBox * 1000).toFixed(2))
+                    },
+                    sustainability: {
+                        co2KgPerBox: Number(totalCO2.toFixed(4)),
+                        recycledPercentage: Number(recycledContentPercentage.toFixed(1)),
+                        isEcoFriendly: recycledContentPercentage > 75 && totalCO2 < (area_m2 * 0.5)
+                    }
+                };
+            };
+
+            // Calculate Standard Reference (125K/127B/125K) explicitly
+            // We need to fetch the raw paper objects for this.
+            // Assuming we have access to them via 'allPapers'.
+            const findPaper = (code, grammage) => allPapers.find(p => p.code === code && p.defaultGrammage === grammage);
+            
+            const stdOuter = findPaper('K', 125);
+            const stdMedium = findPaper('B', 127); // Note: 127B usually means B-flute medium 127g
+            const stdFluteGeom = flutes.find(f => f.code === 'B');
+            
+            let standardRefCalc = null;
+            if (stdOuter && stdMedium && stdFluteGeom) {
+                standardRefCalc = calculateMetrics(stdOuter, stdOuter, stdMedium, stdFluteGeom);
+            }
+
             // Iterate through possible combinations (Outer Liner / Flute / Inner Liner)
             for (const outer of liners) {
                 for (const inner of liners) {
                     for (const fluteGeom of flutes) {
                         for (const medium of mediums) {
                             
-                            const outerPaper = new Paper(outer.name, outer.code, outer.defaultGrammage, Number(outer.burstIndex), Number(outer.rctFactor), Number(outer.co2PerKg));
-                            const innerPaper = new Paper(inner.name, inner.code, inner.defaultGrammage, Number(inner.burstIndex), Number(inner.rctFactor), Number(inner.co2PerKg));
-                            const mediumPaper = new Paper(medium.name, medium.code, medium.defaultGrammage, Number(medium.burstIndex), Number(medium.rctFactor), Number(medium.co2PerKg));
+                            const metrics = calculateMetrics(outer, inner, medium, fluteGeom);
 
-                            const layers = [
-                                { isLiner: true, paper: outerPaper, typeCode: outer.code },
-                                { isLiner: false, paper: mediumPaper, typeCode: fluteGeom.code },
-                                { isLiner: true, paper: innerPaper, typeCode: inner.code }
-                            ];
-
-                            const board = new Board(layers);
-                            const ect = board.getECT('kN/m');
-                            
-                            // BCT Calculation (McKee)
-                            const perimeter = (2 * (Number(length) + Number(width))) / 1000;
-                            const usedCaliper = thickness ? Number(thickness) : board.caliper;
-                            const caliperMeters = usedCaliper / 1000;
-                            const bct = 5.876 * ect * Math.sqrt(perimeter * caliperMeters);
-
-                            // Convert BCT to kgf for comparison
-                            const bctKgf = bct * 102;
-
-                            if (bctKgf >= requiredBCT) {
-                                // Sustainability (Phase 4)
-                                const totalCO2 = board.calculateTotalCO2(area_m2);
-                                const recycledContentPercentage = (
-                                    (outer.isRecycled ? outer.defaultGrammage : 0) + 
-                                    (inner.isRecycled ? inner.defaultGrammage : 0) + 
-                                    (medium.isRecycled ? medium.defaultGrammage * fluteGeom.tur : 0)
-                                ) / board.totalGrammage * 100;
-
-                                // Financials (Phase 3)
-                                const outerCost = (Number(outer.costPerTonne) || 900) * (outerPaper.grammage / 1000 * area_m2);
-                                const innerCost = (Number(inner.costPerTonne) || 850) * (innerPaper.grammage / 1000 * area_m2);
-                                const mediumCost = (Number(medium.costPerTonne) || 750) * (mediumPaper.grammage / 1000 * fluteGeom.tur * area_m2);
-                                const totalCostPerBox = outerCost + innerCost + mediumCost;
-
-                                candidates.push({
-                                    notation: `${outerPaper.grammage}${outerPaper.type}/${mediumPaper.grammage}${fluteGeom.code}/${innerPaper.grammage}${innerPaper.type}`,
-                                    technical: {
-                                        bct: Number(bctKgf.toFixed(2)),
-                                        ect: Number(ect.toFixed(2)),
-                                        caliper: usedCaliper,
-                                        weightKg: Number((board.totalGrammage / 1000 * area_m2).toFixed(3))
-                                    },
-                                    financial: {
-                                        costPerBox: Number(totalCostPerBox.toFixed(4)),
-                                        costPer1000: Number((totalCostPerBox * 1000).toFixed(2))
-                                    },
-                                    sustainability: {
-                                        co2KgPerBox: Number(totalCO2.toFixed(4)),
-                                        recycledPercentage: Number(recycledContentPercentage.toFixed(1)),
-                                        isEcoFriendly: recycledContentPercentage > 75 && totalCO2 < (area_m2 * 0.5)
-                                    }
-                                });
+                            if (metrics.technical.bct >= requiredBCT) {
+                                candidates.push(metrics);
                             }
                         }
                     }
                 }
             }
 
-            // Identify a 'Standard' reference (e.g., 125K/127B/125K) for savings calculation
-            const standardRef = candidates.find(c => c.notation === '125K/127B/125K') || candidates[candidates.length - 1];
+            // Identify a 'Standard' reference for savings calculation
+            // Use the explicitly calculated one if available, otherwise fallback
+            const standardRef = standardRefCalc || candidates.find(c => c.notation === '125K/127B/125K') || candidates[candidates.length - 1];
             
             const resultsWithSavings = candidates.map(c => ({
                 ...c,
