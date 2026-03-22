@@ -1,0 +1,7 @@
+services:
+  app:
+   build: .
+   network_mode: "host"
+   ports:
+     - "${PORT}:3451"
+   container_name: box-metrics-api-service-app

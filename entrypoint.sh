@@ -1,0 +1,16 @@
+set -e
+  
+  # Load variables into the shell session
+  set -a
+  . ./.env
+  set +a
+fi
+
+# 3. Run database migrations
+# Since tsx is now present in the runner, Prisma can read prisma.config.ts correctly.
+echo "🚀 Running database migrations & database seeders..."
+npm run db:setup
+
+# 4. Start the application
+echo "🏁 Starting application..."
+npm run start:prod

@@ -1,0 +1,34 @@
+# Use dev variant for build stage
+
+FROM dhi.io/node:24.14-alpine3.23-dev AS build-stage
+
+ENV NODE_ENV=production
+
+WORKDIR /app
+
+# Copy packages.json and pnpm lock file
+COPY package.json pnpm-lock.yaml ./
+
+# Install dependencies and ensure node_modules exists
+RUN pnpm install -P && mkdir -p node_modules
+
+# Use runtime variant for final stage 
+FROM dhi.io/node:24.14-alpine3.23 AS runtime-stage
+
+ENV NODE_ENV=production
+
+WORKDIR /app
+
+# Copy node_modules from build-stage
+COPY --from=build-stage /app/node_modules ./node_modules
+
+# Copy application code
+COPY . .
+
+# Expose port
+EXPOSE 3450
+
+# Ensure entrypoint is executable
+RUN chmod +x /app/entrypoint.sh
+
+ENTRYPOINT [ "app/entrypoint.sh" ]
