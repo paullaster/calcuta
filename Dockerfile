@@ -1,6 +1,6 @@
 # Use dev variant for build stage
 
-FROM dhi.io/node:24.14-alpine3.23-dev AS build-stage
+FROM node:24.14-alpine AS build-stage
 
 ENV NODE_ENV=production
 
@@ -13,7 +13,7 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install -P && mkdir -p node_modules
 
 # Use runtime variant for final stage 
-FROM dhi.io/node:24.14-alpine3.23 AS runtime-stage
+FROM node:24.14-alpine AS runtime-stage
 
 ENV NODE_ENV=production
 
