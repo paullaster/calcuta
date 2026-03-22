@@ -34,4 +34,4 @@ EXPOSE 3450
 # Ensure entrypoint is executable
 RUN chmod +x /app/entrypoint.sh
 
-ENTRYPOINT [ "app/entrypoint.sh" ]
+ENTRYPOINT [ "/app/entrypoint.sh" ]
