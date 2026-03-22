@@ -3,7 +3,6 @@ services:
    build: .
    network_mode: "host"
    env_file:
-      - .env.development
       - .env.production
    ports:
      - "${PORT}:3451"
