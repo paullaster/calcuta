@@ -24,6 +24,7 @@ WORKDIR /app
 
 # Copy node_modules from build-stage
 COPY --from=build-stage /app/node_modules ./node_modules
+COPY --from=build-stage /app/package.json ./package.json
 
 # Copy application code
 COPY . .
@@ -32,6 +33,6 @@ COPY . .
 EXPOSE 3450
 
 # Ensure entrypoint is executable
-RUN chmod +x /app/entrypoint.sh
+RUN ed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 ENTRYPOINT [ "/app/entrypoint.sh" ]
