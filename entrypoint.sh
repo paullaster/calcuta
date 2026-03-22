@@ -1,15 +1,22 @@
 set -e
+
+
   
   # Load variables into the shell session
-  set -a
-  . ./.env
-  set +a
-fi
+set -a
+. ./.env
+set +a
+
 
 # 3. Run database migrations
 echo "🚀 Running database migrations & database seeders..."
 npm run db:setup
 
+
+# 3. Generate Static logo
+echo "Generating static logo..."
+npm run generate:logo
+
 # 4. Start the application
 echo "🏁 Starting application..."
-npm run start:prod
+npm run start
