@@ -9,6 +9,9 @@ WORKDIR /app
 # Copy packages.json and pnpm lock file
 COPY package.json pnpm-lock.yaml ./
 
+# Enable corepack and prepare pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
 # Install dependencies and ensure node_modules exists
 RUN pnpm install -P && mkdir -p node_modules
 
