@@ -7,7 +7,6 @@ set -e
 fi
 
 # 3. Run database migrations
-# Since tsx is now present in the runner, Prisma can read prisma.config.ts correctly.
 echo "🚀 Running database migrations & database seeders..."
 npm run db:setup
 
