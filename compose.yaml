@@ -4,4 +4,6 @@ services:
    network_mode: "host"
    env_file:
       - .env.production
+   ports:
+     - ${PORT}:3451
    container_name: box-metrics-api-service-app
