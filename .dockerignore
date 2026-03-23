@@ -12,6 +12,7 @@ build/
 
 # Secrets and Environment
 .env*
+!.env.production
 .aws/
 .npmrc
 
