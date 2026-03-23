@@ -16,7 +16,7 @@
     "db:push": "drizzle-kit push",
     "db:seed": "node --experimental-transform-types --env-file=.env src/infra/database/seed.ts",
     "db:seed-prod": "node --experimental-transform-types --env-file=.env.production src/infra/database/seed.ts",
-    "db:setup": "npm run db:migrate-prod && npm run db:generate && npm run db:push && npm run db:seed-prod"
+    "db:setup": "npm run db:migrate-prod"
   },
   "keywords": [],
   "author": "",
