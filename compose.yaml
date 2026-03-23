@@ -3,5 +3,5 @@ services:
    build: .
    network_mode: "host"
    env_file:
-      - .env.production\
+      - .env.production
    container_name: box-metrics-api-service-app
