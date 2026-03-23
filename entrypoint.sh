@@ -6,7 +6,7 @@ set -e
   
   # Load variables into the shell session
 set -a
-. ./.env
+. ./.env.production
 set +a
 
 
