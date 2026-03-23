@@ -15,10 +15,6 @@ echo "🚀 Running database migrations & database seeders..."
 npm run db:setup
 
 
-# 3. Generate Static logo
-echo "Generating static logo..."
-npm run generate:logo
-
 # 4. Start the application
 echo "🏁 Starting application..."
-npm run start
+npm run start:prod
